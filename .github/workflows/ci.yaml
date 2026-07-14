@@ -1,0 +1,92 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # Prettier is run standalone via npx so this job does not need `npm ci`,
+      # which cannot yet resolve the file:-linked @agntcy/slim-bindings.
+      # It still honours .prettierrc.json and .prettierignore in the repo root.
+      - name: Check formatting
+        run: >
+          npx --yes prettier@3.4.2 --check
+          "src/**/*.ts" "examples/**/*.ts" "tests/**/*.ts"
+
+  codegen:
+    name: Codegen up-to-date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ github.token }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache slimrpc plugin
+        id: plugin-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/protoc-gen-slimrpc-node
+          key: slimrpc-plugin-1.5.0-${{ runner.os }}
+
+      - name: Install slimrpc plugin
+        if: steps.plugin-cache.outputs.cache-hit != 'true'
+        run: cargo install --locked agntcy-protoc-slimrpc-plugin@1.5.0 --bin protoc-gen-slimrpc-node
+
+      # Regenerate the committed stubs and fail if they drift from what's checked
+      # in. Needs neither @agntcy/slim-bindings nor npm — buf resolves the proto
+      # (from GitHub) and the protobuf-es remote plugin itself.
+      - name: Regenerate bindings
+        run: buf generate --include-imports --template buf.gen.v1.yaml
+
+      - name: Check for drift
+        run: |
+          if ! git diff --exit-code -- src/types/v1; then
+            echo "::error::Generated bindings are out of date. Run 'npm run generate' and commit the result."
+            exit 1
+          fi
+
+  build-and-test:
+    name: Type-check, build, test
+    runs-on: ubuntu-latest
+    # TODO(slim-bindings-npm): @agntcy/slim-bindings is not yet on npm, so
+    # `npm ci` cannot resolve the current `file:../slim-bindings/node`
+    # dependency in CI. This job is gated off until then. To enable it:
+    #   1. Change the @agntcy/slim-bindings dependency in package.json from
+    #      "file:../slim-bindings/node" to the published version range.
+    #   2. Set repository variable RUN_FULL_CI=true (Settings -> Variables).
+    if: ${{ vars.RUN_FULL_CI == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test

@@ -141,6 +141,19 @@ npm run example:client -- --text "hello slim"  # terminal 2
 
 A `Taskfile.yaml` mirrors these (`task generate`, `task build`, `task test`, …).
 
+## Continuous integration
+
+[`.github/workflows/ci.yaml`](.github/workflows/ci.yaml) runs on pushes and PRs to
+`main`:
+
+- **format** — Prettier check (standalone; no project install).
+- **codegen** — regenerates the stubs with the published slimrpc plugin and fails
+  on drift from what's committed.
+- **build-and-test** — type-check, build, and test on Node 18/20/22. Gated off
+  until `@agntcy/slim-bindings` is on npm (`npm ci` can't resolve the interim
+  `file:` dependency). To enable: point the dependency at the published version
+  and set the repo variable `RUN_FULL_CI=true`.
+
 ## Proto version scope
 
 Ships **A2A v1.0.0** (`git a2aproject/A2A@v1.0.0`, subdir `specification`).
