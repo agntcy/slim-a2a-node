@@ -1,0 +1,5 @@
+dist
+node_modules
+# Generated stubs — keep verbatim from the code generators
+src/types/v1/*_pb.ts
+src/types/v1/*_slimrpc.ts

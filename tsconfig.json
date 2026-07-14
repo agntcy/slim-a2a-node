@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    // Bundler resolution: the @agntcy/slim-bindings build (and its own
+    // examples/tests) ship extensionless relative re-exports in their .d.ts,
+    // which strict NodeNext resolution rejects. Our own source and the
+    // generated stubs still use explicit .js specifiers, so emitted ESM stays
+    // NodeNext-consumable downstream.
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src", "examples", "tests"]
+}

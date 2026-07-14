@@ -1,0 +1,50 @@
+{
+  "name": "@agntcy/slim-a2a",
+  "version": "0.1.0",
+  "description": "SLIM (slimrpc) transport for the A2A protocol, plugging into the official @a2a-js/sdk.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types/v1": {
+      "types": "./dist/types/v1/index.d.ts",
+      "import": "./dist/types/v1/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "generate": "buf generate --include-imports --template buf.gen.v1.yaml",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write \"src/**/*.ts\" \"examples/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"examples/**/*.ts\" \"tests/**/*.ts\"",
+    "example:server": "tsx examples/echo-agent/server.ts",
+    "example:client": "tsx examples/echo-agent/client.ts"
+  },
+  "dependencies": {
+    "@a2a-js/sdk": "1.0.0-beta.0",
+    "@agntcy/slim-bindings": "file:../slim-bindings/node",
+    "@bufbuild/protobuf": "^2.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

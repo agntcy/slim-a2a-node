@@ -1,0 +1,41 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+#
+# Thin wrapper over the npm scripts, mirroring the sibling slim-a2a-* repos'
+# task-based DX. Every target delegates to `npm run ...`.
+---
+version: '3'
+
+silent: true
+
+tasks:
+  generate:
+    desc: 'Generate A2A v1.0 SlimRPC + protobuf-es bindings from the A2A proto'
+    cmds:
+      - npm run generate
+
+  build:
+    desc: 'Type-check and emit the ESM build to dist/'
+    cmds:
+      - npm run build
+
+  typecheck:
+    desc: 'Type-check the whole project without emitting'
+    cmds:
+      - npm run typecheck
+
+  lint:
+    desc: 'Check formatting and types without making changes'
+    cmds:
+      - npm run format:check
+      - npm run typecheck
+
+  fix-lint:
+    desc: 'Auto-format the source'
+    cmds:
+      - npm run format
+
+  test:
+    desc: 'Run the test suite'
+    cmds:
+      - npm test
