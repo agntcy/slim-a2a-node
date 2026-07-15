@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@a2a-js/sdk": "1.0.0-beta.0",
-    "@agntcy/slim-bindings": "file:../slim-bindings/node",
+    "@agntcy/slim-bindings": "2.0.0-alpha.3",
     "@bufbuild/protobuf": "^2.12.1"
   },
   "devDependencies": {

@@ -22,9 +22,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      # Prettier is run standalone via npx so this job does not need `npm ci`,
-      # which cannot yet resolve the file:-linked @agntcy/slim-bindings.
-      # It still honours .prettierrc.json and .prettierignore in the repo root.
+      # Prettier is run standalone via npx to keep this job fast and free of the
+      # native @agntcy/slim-bindings install. It honours .prettierrc.json and
+      # .prettierignore in the repo root.
       - name: Check formatting
         run: >
           npx --yes prettier@3.4.2 --check
@@ -69,13 +69,6 @@ jobs:
   build-and-test:
     name: Type-check, build, test
     runs-on: ubuntu-latest
-    # TODO(slim-bindings-npm): @agntcy/slim-bindings is not yet on npm, so
-    # `npm ci` cannot resolve the current `file:../slim-bindings/node`
-    # dependency in CI. This job is gated off until then. To enable it:
-    #   1. Change the @agntcy/slim-bindings dependency in package.json from
-    #      "file:../slim-bindings/node" to the published version range.
-    #   2. Set repository variable RUN_FULL_CI=true (Settings -> Variables).
-    if: ${{ vars.RUN_FULL_CI == 'true' }}
     strategy:
       fail-fast: false
       matrix:

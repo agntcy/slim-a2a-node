@@ -37,21 +37,14 @@ oneofs, and bytes all round-trip faithfully with no hand-written field mapping.
   cargo install --locked agntcy-protoc-slimrpc-plugin --bin protoc-gen-slimrpc-node
   ```
 
-## Install & local setup
-
-> **Local linking (temporary).** Until `@agntcy/slim-bindings` publishes the ESM
-> named-export fix and a version-matched native platform package, this repo
-> consumes the local build at `../slim-bindings/node`. After `npm install`, run
-> the bootstrap script once (and again whenever that build is regenerated):
+## Install
 
 ```sh
 npm install
-./scripts/setup-local-bindings.sh
 ```
 
-`setup-local-bindings.sh` builds the local native platform tarball and installs
-it where the linked build's loader resolves it. Once upstream publishes, replace
-the `file:` dependency with the npm package and drop this step.
+Pulls `@agntcy/slim-bindings` and the matching native platform package for your
+OS/arch from npm automatically.
 
 ## Usage
 
@@ -149,10 +142,7 @@ A `Taskfile.yaml` mirrors these (`task generate`, `task build`, `task test`, …
 - **format** — Prettier check (standalone; no project install).
 - **codegen** — regenerates the stubs with the published slimrpc plugin and fails
   on drift from what's committed.
-- **build-and-test** — type-check, build, and test on Node 18/20/22. Gated off
-  until `@agntcy/slim-bindings` is on npm (`npm ci` can't resolve the interim
-  `file:` dependency). To enable: point the dependency at the published version
-  and set the repo variable `RUN_FULL_CI=true`.
+- **build-and-test** — type-check, build, and test on Node 18/20/22.
 
 ## Proto version scope
 
