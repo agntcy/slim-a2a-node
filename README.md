@@ -144,6 +144,24 @@ A `Taskfile.yaml` mirrors these (`task generate`, `task build`, `task test`, …
   on drift from what's committed.
 - **build-and-test** — type-check, build, and test on Node 18/20/22.
 
+## Releasing
+
+[`.github/workflows/release.yaml`](.github/workflows/release.yaml) publishes to
+npm on a version tag. Push a tag matching `v<version>`:
+
+```sh
+git tag v0.1.0          # -> published as @latest
+git tag v0.1.0-alpha.1  # -> published as @alpha
+git push origin --tags
+```
+
+The package version is taken from the tag; the npm dist-tag is derived from any
+prerelease id (`alpha`/`beta`/`rc`/… → that tag, plain version → `latest`).
+
+Publishing uses **npm Trusted Publishing (OIDC)** — no `NPM_TOKEN` secret.
+One-time setup on npmjs.com: the `@agntcy/slim-a2a` package → Settings → Trusted
+publishing → set Repository to this repo and Workflow filename to `release.yaml`.
+
 ## Proto version scope
 
 Ships **A2A v1.0.0** (`git a2aproject/A2A@v1.0.0`, subdir `specification`).
