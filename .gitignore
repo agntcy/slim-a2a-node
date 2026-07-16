@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# NOTE: generated protobuf / slimrpc stubs under src/types/v1/ ARE committed
+# (regenerate with `npm run generate`) so the repo builds without the codegen
+# toolchain, mirroring the sibling SDKs.
+
+# Test / coverage
+coverage/
+.vitest/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp

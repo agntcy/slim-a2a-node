@@ -1,0 +1,89 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+#
+# Publishes @agntcy/slim-a2a to npm on a version tag (e.g. `v0.1.0`,
+# `v0.1.0-alpha.1`). The package version is taken from the tag, and the npm
+# dist-tag is derived from it: a prerelease id (`alpha`/`beta`/`rc`/…) becomes
+# that dist-tag, a plain version publishes as `latest`.
+#
+# Publishing uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret. One-time
+# setup on npmjs.com: package Settings -> Trusted publishing -> set Repository to
+# this repo and Workflow filename to `release.yaml`.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Mandatory for npm Trusted Publishing (OIDC).
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Trusted publishing requires npm >= 11.5.1, which ships with Node 24.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          npm pkg set version="$VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Publish (build runs via prepublishOnly)
+        run: |
+          if [[ "$VERSION" == *-* ]]; then
+            NPM_TAG="${VERSION#*-}"; NPM_TAG="${NPM_TAG%%.*}"; NPM_TAG="${NPM_TAG:-next}"
+          else
+            NPM_TAG="latest"
+          fi
+          echo "Publishing $VERSION with dist-tag: $NPM_TAG"
+          npm publish --access public --tag "$NPM_TAG"
+
+  github-release:
+    name: GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
