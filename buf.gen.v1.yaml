@@ -24,11 +24,15 @@ plugins:
   # Generates <base>_slimrpc.ts (client stub, group stub, servicer interface,
   # handler adapters, and registration function).
   # Requires `protoc-gen-slimrpc-node` on PATH:
-  #   cargo install --locked agntcy-protoc-slimrpc-plugin --bin protoc-gen-slimrpc-node
+  #   cargo install --locked --version 2.0.1 agntcy-protoc-slimrpc-plugin --bin protoc-gen-slimrpc-node
   - local: protoc-gen-slimrpc-node
     out: src/types/v1
-    # bindings_import defaults to "@agntcy/slim-bindings" — the linked local
-    # build exposes the required named exports, so no override is needed.
+    opt:
+      # bindings_import defaults to "@agntcy/slim-bindings". Bindings 2.0 moved
+      # the slimrpc API into a second UniFFI namespace (`slim_rpc`) that the
+      # package's root type entry does not re-export, so the stubs are pointed
+      # at src/slimBindings.ts, which merges both namespaces back together.
+      - bindings_import=../../slimBindings.js
   # Generates <base>_pb.ts (protobuf-es v2 message types + schemas).
   - remote: buf.build/bufbuild/es:v2.12.1
     out: src/types/v1

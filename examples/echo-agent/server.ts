@@ -9,12 +9,12 @@
  *
  * Run: `npm run example:server -- --name echo_agent`
  */
-import { Server } from '@agntcy/slim-bindings';
 import { AgentCard } from '@a2a-js/sdk';
 import { DefaultRequestHandler, InMemoryTaskStore } from '@a2a-js/sdk/server';
 import {
   registerSlimA2AHandler,
   setupSlimClient,
+  slim,
   SRPCHandler,
   startSlimBroker,
 } from '../../src/index.js';
@@ -80,7 +80,7 @@ async function main(): Promise<void> {
     slimUrl,
   });
 
-  const server = Server.newWithConnection(app, localName, connId);
+  const server = slim.Server.newWithConnection(app, localName, connId);
   registerSlimA2AHandler(server, new SRPCHandler(agentCard, requestHandler));
 
   console.log(`Echo agent serving as ${namespace}/${group}/${name} (Ctrl+C to stop)`);

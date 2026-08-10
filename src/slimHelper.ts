@@ -14,7 +14,7 @@ import {
   type AppLike,
   type NameLike,
   type ServiceLike,
-} from '@agntcy/slim-bindings';
+} from './slimBindings.js';
 
 /** Default SLIM node endpoint used by clients. */
 export const DEFAULT_SLIM_URL = 'http://localhost:46357';

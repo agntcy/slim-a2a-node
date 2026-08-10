@@ -16,7 +16,7 @@ import {
   type UnaryStreamHandler,
   type StreamUnaryHandler,
   type StreamStreamHandler,
-} from "@agntcy/slim-bindings";
+} from "../../slimBindings.js";
 import { fromBinary, toBinary } from "@bufbuild/protobuf";
 import { AgentCardSchema, CancelTaskRequestSchema, DeleteTaskPushNotificationConfigRequestSchema, GetExtendedAgentCardRequestSchema, GetTaskPushNotificationConfigRequestSchema, GetTaskRequestSchema, ListTaskPushNotificationConfigsRequestSchema, ListTaskPushNotificationConfigsResponseSchema, ListTasksRequestSchema, ListTasksResponseSchema, SendMessageRequestSchema, SendMessageResponseSchema, StreamResponseSchema, SubscribeToTaskRequestSchema, TaskPushNotificationConfigSchema, TaskSchema, type AgentCard, type CancelTaskRequest, type DeleteTaskPushNotificationConfigRequest, type GetExtendedAgentCardRequest, type GetTaskPushNotificationConfigRequest, type GetTaskRequest, type ListTaskPushNotificationConfigsRequest, type ListTaskPushNotificationConfigsResponse, type ListTasksRequest, type ListTasksResponse, type SendMessageRequest, type SendMessageResponse, type StreamResponse, type SubscribeToTaskRequest, type Task, type TaskPushNotificationConfig } from "./a2a_pb.js";
 import { EmptySchema, type Empty } from "@bufbuild/protobuf/wkt";

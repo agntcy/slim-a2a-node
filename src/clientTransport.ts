@@ -15,7 +15,7 @@ import {
   type AppLike,
   type ChannelLike,
   type NameLike,
-} from '@agntcy/slim-bindings';
+} from './slimBindings.js';
 import type {
   RequestOptions,
   ServiceParameters,

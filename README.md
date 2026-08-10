@@ -34,8 +34,11 @@ oneofs, and bytes all round-trip faithfully with no hand-written field mapping.
   the `protoc-gen-slimrpc-node` plugin on `PATH`:
 
   ```sh
-  cargo install --locked agntcy-protoc-slimrpc-plugin --bin protoc-gen-slimrpc-node
+  cargo install --locked --version 2.0.1 agntcy-protoc-slimrpc-plugin --bin protoc-gen-slimrpc-node
   ```
+
+  The committed stubs under `src/types/v1/` are generated with the 2.0 line of
+  the plugin, matching `@agntcy/slim-bindings` 2.0.
 
 ## Install
 
@@ -51,10 +54,14 @@ OS/arch from npm automatically.
 ### Server
 
 ```ts
-import { Server } from '@agntcy/slim-bindings';
 import { AgentCard } from '@a2a-js/sdk';
 import { DefaultRequestHandler, InMemoryTaskStore } from '@a2a-js/sdk/server';
-import { setupSlimClient, SRPCHandler, registerSlimA2AHandler } from '@agntcy/slim-a2a';
+import {
+  registerSlimA2AHandler,
+  setupSlimClient,
+  slim,
+  SRPCHandler,
+} from '@agntcy/slim-a2a';
 
 const agentCard = AgentCard.fromJSON({
   name: 'My Agent',
@@ -73,7 +80,7 @@ const requestHandler = new DefaultRequestHandler(
 );
 
 const { app, name, connId } = await setupSlimClient('agntcy', 'demo', 'my_agent');
-const server = Server.newWithConnection(app, name, connId);
+const server = slim.Server.newWithConnection(app, name, connId);
 registerSlimA2AHandler(server, new SRPCHandler(agentCard, requestHandler));
 await server.serveAsync();
 ```
@@ -112,6 +119,16 @@ SLIM names are the 3-tuple `organization/namespace/app`; the agent card's slimrp
 
 `SRPCMulticastClient` queries several agents over a SLIM group channel, yielding
 `{ source, response }` per responding member — see `src/clientTransport.ts`.
+
+### The `slim` namespace
+
+`slim` re-exports the `@agntcy/slim-bindings` 2.0 runtime — `Name`, `Service`,
+`App`, `Channel`, `Server`, `RpcError`, the config helpers — for the parts this
+SDK does not wrap. Bindings 2.0 split the slimrpc API into a second UniFFI
+namespace (`slim_rpc`) that the package's type entry point does not re-export,
+so importing `Channel`/`Server`/`ContextLike` straight from
+`@agntcy/slim-bindings` does not typecheck; `slim` stitches both namespaces back
+together (see `src/slimBindings.ts`).
 
 ## Example
 
