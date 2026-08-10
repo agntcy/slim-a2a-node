@@ -18,7 +18,7 @@ import {
   Server,
   type AppLike,
   type ServerLike,
-} from '@agntcy/slim-bindings';
+} from '../src/slimBindings.js';
 import {
   AgentCard,
   SendMessageRequest,

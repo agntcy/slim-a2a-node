@@ -5,7 +5,7 @@
  * Maps A2A SDK server errors onto slimrpc {@link RpcError}s, mirroring the
  * error handling in slim-a2a-python's `handler.py`.
  */
-import { RpcCode, RpcError } from '@agntcy/slim-bindings';
+import { RpcCode, RpcError } from './slimBindings.js';
 import {
   ContentTypeNotSupportedError,
   ExtendedAgentCardNotConfiguredError,

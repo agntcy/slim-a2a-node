@@ -12,7 +12,7 @@
  */
 import { create } from '@bufbuild/protobuf';
 import { EmptySchema, type Empty } from '@bufbuild/protobuf/wkt';
-import type { ContextLike, ServerLike } from '@agntcy/slim-bindings';
+import type { ContextLike, ServerLike } from './slimBindings.js';
 import { HTTP_EXTENSION_HEADER } from '@a2a-js/sdk';
 import type { AgentCard } from '@a2a-js/sdk';
 import {

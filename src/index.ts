@@ -13,7 +13,7 @@
  */
 import { Client, ClientFactory, type ClientConfig } from '@a2a-js/sdk/client';
 import type { AgentCard } from '@a2a-js/sdk';
-import type { AppLike } from '@agntcy/slim-bindings';
+import type { AppLike } from './slimBindings.js';
 import {
   SRPCTransport,
   SRPCTransportFactory,
@@ -24,6 +24,14 @@ export * from './slimHelper.js';
 export * from './clientTransport.js';
 export * from './handler.js';
 export { toRpcError } from './errors.js';
+
+/**
+ * The `@agntcy/slim-bindings` 2.0 runtime, with the `slim_bindings` and
+ * `slim_rpc` namespaces merged into one typed surface (see
+ * `src/slimBindings.ts`). Use it for the pieces this SDK does not wrap — e.g.
+ * `slim.Server.newWithConnection(app, name, connId)` when standing up an agent.
+ */
+export * as slim from './slimBindings.js';
 
 /** Low-level protobuf-es message types + slimrpc stubs for A2A v1.0.0. */
 export * as v1 from './types/v1/index.js';
