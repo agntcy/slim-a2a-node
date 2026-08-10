@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "SLIM (slimrpc) transport for the A2A protocol, plugging into the official @a2a-js/sdk.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agntcy/slim-a2a-node.git"
+  },
+  "homepage": "https://github.com/agntcy/slim-a2a-node#readme",
+  "bugs": {
+    "url": "https://github.com/agntcy/slim-a2a-node/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=18"
