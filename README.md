@@ -1,5 +1,7 @@
 # slim-a2a-node
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/agntcy/slim-a2a-node/badge)](https://scorecard.dev/viewer/?uri=github.com/agntcy/slim-a2a-node)
+
 A **SLIM (slimrpc) transport for the [A2A](https://github.com/a2aproject/A2A)
 protocol** in TypeScript. It lets A2A agents communicate over the SLIM network
 using SLIM identities for addressing and authentication, and plugs directly into
