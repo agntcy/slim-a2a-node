@@ -48,8 +48,8 @@
     "example:client": "tsx examples/echo-agent/client.ts"
   },
   "dependencies": {
-    "@a2a-js/sdk": "1.0.0-beta.0",
-    "@agntcy/slim-bindings": "2.0.0",
+    "@a2a-js/sdk": "1.3.0",
+    "@agntcy/slim-bindings": "2.1.2",
     "@bufbuild/protobuf": "^2.12.1"
   },
   "devDependencies": {
