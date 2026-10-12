@@ -20,6 +20,9 @@ Flags (both server and client):
 
 - `--url <http://host:port>` — SLIM node URL (default `http://127.0.0.1:46357`).
 - `--name <agent>` — agent name (default `echo_agent`).
+- `--secret <secret>` — shared secret (>= 32 chars) both sides authenticate
+  with. Defaults to `$SLIM_SHARED_SECRET`, else a publicly known demo-only
+  placeholder; the library itself has no default secret.
 - server `--no-broker` — do not start the in-process node (use one already running).
 - client `--text <message>` — text to send.
 

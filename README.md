@@ -81,7 +81,9 @@ const requestHandler = new DefaultRequestHandler(
   new MyAgentExecutor(), // your AgentExecutor
 );
 
-const { app, name, connId } = await setupSlimClient('agntcy', 'demo', 'my_agent');
+const { app, name, connId } = await setupSlimClient('agntcy', 'demo', 'my_agent', {
+  secret: process.env.SLIM_SHARED_SECRET, // or `identity` — see below
+});
 const server = slim.Server.newWithConnection(app, name, connId);
 registerSlimA2AHandler(server, new SRPCHandler(agentCard, requestHandler));
 await server.serveAsync();
@@ -93,7 +95,9 @@ await server.serveAsync();
 import { setupSlimClient, createSlimClient } from '@agntcy/slim-a2a';
 import { SendMessageRequest } from '@a2a-js/sdk';
 
-const { app, connId } = await setupSlimClient('agntcy', 'demo', 'client');
+const { app, connId } = await setupSlimClient('agntcy', 'demo', 'client', {
+  secret: process.env.SLIM_SHARED_SECRET,
+});
 const client = await createSlimClient(app, connId, agentCard); // A2A SDK Client
 
 const request = SendMessageRequest.fromJSON({
@@ -116,6 +120,92 @@ const client = await factory.createFromAgentCard(agentCard);
 
 SLIM names are the 3-tuple `organization/namespace/app`; the agent card's slimrpc
 `AgentInterface.url` carries that name.
+
+### Identity and node connection
+
+`setupSlimClient` / `connectAndSubscribe` take a `ConnectOptions` that sets two
+independent things:
+
+- **App identity** (required, exactly one): `secret`, a shared secret (>= 32
+  chars), or `identity: { provider, verifier }`, any
+  `IdentityProviderConfig` / `IdentityVerifierConfig` the bindings support
+  (shared secret, static or signed JWT including EdDSA, JWKS-based verification,
+  SPIRE). There is **no default secret**: omitting both throws.
+- **Node connection** (optional, at most one): `slimUrl` for a plaintext
+  connection (default `http://localhost:46357`), or `clientConfig`, a full
+  `ClientConfig` with TLS, auth, headers and timeouts.
+
+With a shared secret, anyone who holds the secret can claim any SLIM name. A
+per-agent JWT identity binds each app to a key you control. Every member of a
+session needs a compatible identity type. Here an agent signs its own Ed25519
+JWT, trusts tokens verified against a JWKS file, and connects to a node over
+TLS with a bearer token:
+
+```ts
+import { setupSlimClient, slim } from '@agntcy/slim-a2a';
+
+const name = 'agntcy/demo/my_agent';
+const hour = 3_600_000; // durations are milliseconds
+
+const identity = {
+  provider: new slim.IdentityProviderConfig.Jwt({
+    config: {
+      key: new slim.JwtKeyType.Encoding({
+        key: {
+          algorithm: slim.JwtAlgorithm.EdDsa,
+          format: slim.JwtKeyFormat.Pem,
+          key: new slim.JwtKeyData.File({ path: '/etc/slim/agent-key.pem' }),
+        },
+      }),
+      issuer: 'agntcy',
+      audience: ['agntcy/demo'],
+      subject: name,
+      duration: hour,
+    },
+  }),
+  verifier: new slim.IdentityVerifierConfig.Jwt({
+    config: {
+      // A JWKS file of trusted public keys acts as the allowlist.
+      key: new slim.JwtKeyType.Decoding({
+        key: {
+          algorithm: slim.JwtAlgorithm.EdDsa,
+          format: slim.JwtKeyFormat.Jwks,
+          key: new slim.JwtKeyData.File({ path: '/etc/slim/trusted.jwks.json' }),
+        },
+      }),
+      issuer: 'agntcy',
+      audience: ['agntcy/demo'],
+      duration: hour,
+    },
+  }),
+};
+
+// TLS (system CA pool) plus a bearer token read from a file.
+const clientConfig = {
+  ...slim.newSecureClientConfig('https://slim.example.com:443'),
+  auth: new slim.ClientAuthenticationConfig.StaticJwt({
+    config: { tokenFile: '/var/run/secrets/slim/token', duration: hour },
+  }),
+};
+
+const { app, connId } = await setupSlimClient('agntcy', 'demo', 'my_agent', {
+  identity,
+  clientConfig,
+});
+```
+
+`tests/identity.e2e.test.ts` runs the same identity setup end to end with an
+in-memory key.
+
+#### Caller identity on the server
+
+`SRPCHandler`'s default `CallContextBuilder` sets the caller to
+`UnauthenticatedUser`. The slimrpc server `Context` in `@agntcy/slim-bindings`
+2.0 exposes no source name or verified identity for the caller, only the session
+id, deadline and caller-supplied metadata. SLIM still verifies the peer's
+identity before a message reaches the handler, but the handler cannot see who
+the peer is. Exposing the verified subject/issuer depends on the bindings
+upgrade.
 
 ### Multicast
 

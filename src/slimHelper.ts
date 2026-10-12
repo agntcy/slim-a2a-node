@@ -12,6 +12,9 @@ import {
   newInsecureClientConfig,
   newInsecureServerConfig,
   type AppLike,
+  type ClientConfig,
+  type IdentityProviderConfig,
+  type IdentityVerifierConfig,
   type NameLike,
   type ServiceLike,
 } from './slimBindings.js';
@@ -20,18 +23,40 @@ import {
 export const DEFAULT_SLIM_URL = 'http://localhost:46357';
 
 /**
- * Default shared secret for app creation. Matches the placeholder used by the
- * sibling SDKs so agents across languages interoperate out of the box. It is a
- * development default only — supply your own in production. Must be >= 32 chars.
+ * A SLIM app identity: how this app proves who it is to others (`provider`) and
+ * how it verifies the identity of its peers (`verifier`). Passed straight to
+ * `Service.createApp`, so any provider/verifier the bindings support works —
+ * shared secret, static or signed JWT (incl. EdDSA), JWKS-based verification or
+ * SPIRE.
  */
-export const DEFAULT_SECRET = 'secretsecretsecretsecretsecretsecret';
+export interface SlimIdentity {
+  provider: IdentityProviderConfig;
+  verifier: IdentityVerifierConfig;
+}
 
-/** Options for {@link connectAndSubscribe} / {@link setupSlimClient}. */
+/**
+ * Options for {@link connectAndSubscribe} / {@link setupSlimClient}.
+ *
+ * Exactly one of `secret` or `identity` is required; there is no default
+ * credential. At most one of `slimUrl` or `clientConfig` may be given.
+ */
 export interface ConnectOptions {
-  /** SLIM node URL to connect to. Defaults to {@link DEFAULT_SLIM_URL}. */
+  /**
+   * SLIM node URL to connect to over an insecure (plaintext, unauthenticated)
+   * connection. Defaults to {@link DEFAULT_SLIM_URL} when `clientConfig` is not
+   * set.
+   */
   slimUrl?: string;
-  /** Shared secret for app creation. Defaults to {@link DEFAULT_SECRET}. */
+  /**
+   * Full client configuration for the node connection (TLS, bearer/JWT/basic
+   * auth, headers, timeouts, ...), e.g. built with `newSecureClientConfig` or
+   * `ClientConfig.create`. Takes the place of `slimUrl`.
+   */
+  clientConfig?: ClientConfig;
+  /** Shared secret for app creation (>= 32 chars). Mutually exclusive with `identity`. */
   secret?: string;
+  /** Identity provider/verifier for app creation. Mutually exclusive with `secret`. */
+  identity?: SlimIdentity;
 }
 
 /** The result of a full {@link setupSlimClient} bootstrap. */
@@ -62,19 +87,61 @@ export function initializeSlim(): ServiceLike {
 }
 
 /**
- * Connects to a SLIM node, creates a shared-secret app for `localName`, and
- * subscribes it to its own name so it can receive traffic.
+ * Validates {@link ConnectOptions} and resolves the client config to dial.
+ * Throws before any connection is opened when the options are ambiguous or no
+ * credential was supplied.
+ */
+function resolveConnectOptions(options: ConnectOptions | undefined): {
+  clientConfig: ClientConfig;
+  createApp: (service: ServiceLike, name: NameLike) => AppLike;
+} {
+  // `?? {}` so untyped (JS) callers that omit the options get the clear error below.
+  const { slimUrl, clientConfig, secret, identity } = options ?? {};
+  if (slimUrl !== undefined && clientConfig !== undefined) {
+    throw new Error(
+      'ConnectOptions: pass either `slimUrl` or `clientConfig`, not both ' +
+        '(`clientConfig.endpoint` sets the node URL).',
+    );
+  }
+  if (secret !== undefined && identity !== undefined) {
+    throw new Error('ConnectOptions: pass either `secret` or `identity`, not both.');
+  }
+  let createApp: (service: ServiceLike, name: NameLike) => AppLike;
+  if (identity !== undefined) {
+    createApp = (service, name) =>
+      service.createApp(name, identity.provider, identity.verifier);
+  } else if (secret) {
+    createApp = (service, name) => service.createAppWithSecret(name, secret);
+  } else {
+    throw new Error(
+      'ConnectOptions: a SLIM credential is required. Pass `secret` (shared ' +
+        'secret, >= 32 chars) or `identity` ({ provider, verifier }). There is ' +
+        'no default secret.',
+    );
+  }
+  return {
+    clientConfig: clientConfig ?? newInsecureClientConfig(slimUrl ?? DEFAULT_SLIM_URL),
+    createApp,
+  };
+}
+
+/**
+ * Connects to a SLIM node, creates an app for `localName` with the configured
+ * identity (shared secret or provider/verifier), and subscribes it to its own
+ * name so it can receive traffic.
  *
+ * @throws if neither `secret` nor `identity` is given, or if conflicting
+ *   options are passed (see {@link ConnectOptions}).
  * @returns the created app and the connection id (a `bigint`).
  */
 export async function connectAndSubscribe(
   service: ServiceLike,
   localName: NameLike,
-  options: ConnectOptions = {},
+  options: ConnectOptions,
 ): Promise<{ app: AppLike; connId: bigint }> {
-  const { slimUrl = DEFAULT_SLIM_URL, secret = DEFAULT_SECRET } = options;
-  const connId = BigInt(await service.connectAsync(newInsecureClientConfig(slimUrl)));
-  const app = service.createAppWithSecret(localName, secret);
+  const { clientConfig, createApp } = resolveConnectOptions(options);
+  const connId = BigInt(await service.connectAsync(clientConfig));
+  const app = createApp(service, localName);
   await app.subscribeAsync(localName, connId);
   return { app, connId };
 }
@@ -85,15 +152,19 @@ export async function connectAndSubscribe(
  *
  * @example
  * ```ts
- * const { app, name, connId } = await setupSlimClient('agntcy', 'demo', 'echo_agent');
+ * const { app, name, connId } = await setupSlimClient('agntcy', 'demo', 'echo_agent', {
+ *   secret: process.env.SLIM_SHARED_SECRET,
+ * });
  * ```
  */
 export async function setupSlimClient(
   namespace: string,
   group: string,
   name: string,
-  options: ConnectOptions = {},
+  options: ConnectOptions,
 ): Promise<SlimClient> {
+  // Validate before touching the global service so misconfiguration fails fast.
+  resolveConnectOptions(options);
   const service = initializeSlim();
   const localName = new Name(namespace, group, name);
   const { app, connId } = await connectAndSubscribe(service, localName, options);

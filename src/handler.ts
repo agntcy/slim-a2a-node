@@ -48,7 +48,15 @@ export interface CallContextBuilder {
   build(context: ContextLike, tenant?: string): ServerCallContext;
 }
 
-/** Default builder: unauthenticated user + requested extensions from metadata. */
+/**
+ * Default builder: unauthenticated user + requested extensions from metadata.
+ *
+ * The caller's user is always {@link UnauthenticatedUser}: the slimrpc server
+ * `Context` in `@agntcy/slim-bindings` 2.0 exposes only the session id,
+ * deadline and caller-supplied metadata, not the SLIM name or verified identity
+ * of the sender. Metadata is set by the caller and must not be treated as an
+ * identity. Supply a custom {@link CallContextBuilder} to apply your own policy.
+ */
 export class DefaultCallContextBuilder implements CallContextBuilder {
   build(context: ContextLike, tenant?: string): ServerCallContext {
     const header = context.metadata().get(HTTP_EXTENSION_HEADER) ?? '';
