@@ -28,7 +28,6 @@ import {
 import { DefaultRequestHandler, InMemoryTaskStore } from '@a2a-js/sdk/server';
 import {
   createSlimClient,
-  DEFAULT_SECRET,
   initializeSlim,
   registerSlimA2AHandler,
   SRPCHandler,
@@ -40,6 +39,7 @@ const PORT = 46411;
 const SLIM_URL = `http://127.0.0.1:${PORT}`;
 const AGENT = 'echo_agent';
 const REMOTE = `agntcy/demo/${AGENT}`;
+const SECRET = 'e2e-test-secret-e2e-test-secret-0123456';
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,7 +77,7 @@ beforeAll(async () => {
 
   // Server app + slimrpc service.
   const serverName = new Name('agntcy', 'demo', AGENT);
-  const serverApp = service.createAppWithSecret(serverName, DEFAULT_SECRET);
+  const serverApp = service.createAppWithSecret(serverName, SECRET);
   await serverApp.subscribeAsync(serverName, clientConnId);
   const requestHandler = new DefaultRequestHandler(
     agentCard,
@@ -90,7 +90,7 @@ beforeAll(async () => {
 
   // Client app on the same connection.
   const clientName = new Name('agntcy', 'demo', 'client');
-  clientApp = service.createAppWithSecret(clientName, DEFAULT_SECRET);
+  clientApp = service.createAppWithSecret(clientName, SECRET);
   await clientApp.subscribeAsync(clientName, clientConnId);
 
   await sleep(300);

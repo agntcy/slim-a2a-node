@@ -25,6 +25,13 @@ function arg(name: string, fallback: string): string {
   return idx >= 0 && process.argv[idx + 1] ? process.argv[idx + 1] : fallback;
 }
 
+/**
+ * Demo-only shared secret, the same placeholder the sibling slim-a2a examples
+ * use so they interoperate locally. It is publicly known: never use it outside
+ * a local demo. Override with `--secret` or `SLIM_SHARED_SECRET`.
+ */
+const DEMO_SECRET = 'secretsecretsecretsecretsecretsecret';
+
 /** Derives a broker bind endpoint (`host:port`) from a SLIM client URL. */
 function brokerEndpoint(url: string): string {
   const { hostname, port } = new URL(url);
@@ -34,6 +41,7 @@ function brokerEndpoint(url: string): string {
 async function main(): Promise<void> {
   const name = arg('name', 'echo_agent');
   const slimUrl = arg('url', 'http://127.0.0.1:46357');
+  const secret = arg('secret', process.env.SLIM_SHARED_SECRET ?? DEMO_SECRET);
   const namespace = 'agntcy';
   const group = 'demo';
 
@@ -78,6 +86,7 @@ async function main(): Promise<void> {
     connId,
   } = await setupSlimClient(namespace, group, name, {
     slimUrl,
+    secret,
   });
 
   const server = slim.Server.newWithConnection(app, localName, connId);

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Breaking:** removed the `DEFAULT_SECRET` export and the silent fallback to
+  it in `connectAndSubscribe` / `setupSlimClient`. The value was publicly known,
+  so any caller that omitted `secret` joined SLIM with a credential anyone could
+  use to claim any name. `ConnectOptions` now requires exactly one of `secret`
+  or `identity` and throws otherwise. To keep the previous behaviour, pass the
+  old value explicitly as `secret`.
+
+### Added
+
+- `ConnectOptions.identity` (`SlimIdentity`): any identity provider/verifier
+  supported by the bindings (shared secret, static/signed JWT including EdDSA,
+  JWKS verification, SPIRE), passed to `Service.createApp`.
+- `ConnectOptions.clientConfig`: a full `ClientConfig` for the node connection
+  (TLS, bearer/JWT/basic auth, headers, timeouts), in place of `slimUrl`.
+
 ### Changed
 
 - Upgraded to `@agntcy/slim-bindings` 2.0.0 (from 2.0.0-alpha.3) and the 2.0 line
