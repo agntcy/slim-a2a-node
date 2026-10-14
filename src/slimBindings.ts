@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Combined view of the `@agntcy/slim-bindings` 2.0 API.
+ * Combined view of the `@agntcy/slim-bindings` 3.x API.
  *
- * As of bindings 2.0.0 the slimrpc API (`Channel`, `Server`, `RpcError`, the
+ * Since bindings 2.0.0 the slimrpc API (`Channel`, `Server`, `RpcError`, the
  * handler interfaces, ...) lives in a second UniFFI namespace, `slim_rpc`.
  * Its *values* are re-exported from the package root at runtime, but the
  * package's type entry point only re-exports the core `slim_bindings`

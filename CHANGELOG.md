@@ -23,9 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   JWKS verification, SPIRE), passed to `Service.createApp`.
 - `ConnectOptions.clientConfig`: a full `ClientConfig` for the node connection
   (TLS, bearer/JWT/basic auth, headers, timeouts), in place of `slimUrl`.
+- **Breaking:** the handler now sees the caller's verified identity.
+  `DefaultCallContextBuilder` sets `context.user` to a `SlimAuthenticatedUser`
+  (`subject` / `userName`, optional `issuer`) built from the slimrpc
+  `Context.peerSubject()` / `peerIssuer()`: the verified `sub` / `iss` of the
+  token the caller's app set up the MLS session with (in group sessions, the
+  request's MLS sender). It falls back to `UnauthenticatedUser` when SLIM reports
+  none. Identity is never taken from caller-supplied metadata. MLS callers
+  previously arrived as `UnauthenticatedUser`, so handlers that give
+  authenticated users extra access now give it to any verified peer. The
+  re-exported `ContextLike` now requires `peerSubject()` / `peerIssuer()`.
+  `callerUser(context)` exposes the same logic to custom `CallContextBuilder`s.
 
 ### Changed
 
+- Upgraded to `@agntcy/slim-bindings` 3.3 and the 3.x slimrpc compiler
+  (`agntcy-protoc-slimrpc-plugin` 3.0.0; the generated stubs are unchanged).
+  The 3.x API is a superset of 2.0 for what this SDK uses.
 - Upgraded to `@agntcy/slim-bindings` 2.0.0 (from 2.0.0-alpha.3) and the 2.0 line
   of the slimrpc compiler (`agntcy-protoc-slimrpc-plugin`, node generator).
   Bindings 2.0 moved the slimrpc API (`Channel`, `Server`, `RpcError`, the

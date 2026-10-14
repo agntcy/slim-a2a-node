@@ -26,7 +26,7 @@ export * from './handler.js';
 export { toRpcError } from './errors.js';
 
 /**
- * The `@agntcy/slim-bindings` 2.0 runtime, with the `slim_bindings` and
+ * The `@agntcy/slim-bindings` 3.x runtime, with the `slim_bindings` and
  * `slim_rpc` namespaces merged into one typed surface (see
  * `src/slimBindings.ts`). Use it for the pieces this SDK does not wrap — e.g.
  * `slim.Server.newWithConnection(app, name, connId)` when standing up an agent.

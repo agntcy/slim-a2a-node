@@ -19,6 +19,7 @@ import {
   type A2ARequestHandler,
   ServerCallContext,
   UnauthenticatedUser,
+  type User,
 } from '@a2a-js/sdk/server';
 import {
   type A2AServiceServicer,
@@ -49,13 +50,48 @@ export interface CallContextBuilder {
 }
 
 /**
- * Default builder: unauthenticated user + requested extensions from metadata.
+ * A caller whose identity SLIM verified: the subject (`sub`) and, when present,
+ * issuer (`iss`) of the token the caller's app set up the MLS session with.
+ * `userName` is the subject.
+ */
+export class SlimAuthenticatedUser implements User {
+  constructor(
+    /** The verified subject (`sub`) of the caller. */
+    readonly subject: string,
+    /** The verified issuer (`iss`) of the caller, when its token has one. */
+    readonly issuer?: string,
+  ) {}
+
+  get isAuthenticated(): boolean {
+    return true;
+  }
+
+  get userName(): string {
+    return this.subject;
+  }
+}
+
+/**
+ * Returns the caller's verified identity from the slimrpc `Context`, or
+ * {@link UnauthenticatedUser} when SLIM reports none (e.g. a non-MLS session).
  *
- * The caller's user is always {@link UnauthenticatedUser}: the slimrpc server
- * `Context` in `@agntcy/slim-bindings` 2.0 exposes only the session id,
- * deadline and caller-supplied metadata, not the SLIM name or verified identity
- * of the sender. Metadata is set by the caller and must not be treated as an
- * identity. Supply a custom {@link CallContextBuilder} to apply your own policy.
+ * The identity comes only from `Context.peerSubject()` / `peerIssuer()`, which
+ * SLIM fills from the caller's verified token. Caller-supplied metadata is never
+ * consulted. In a group session the subject is that of the request's MLS sender.
+ */
+export function callerUser(context: ContextLike): User {
+  const subject = context.peerSubject();
+  if (!subject) {
+    return new UnauthenticatedUser();
+  }
+  return new SlimAuthenticatedUser(subject, context.peerIssuer() || undefined);
+}
+
+/**
+ * Default builder: the caller's verified SLIM identity (see {@link callerUser})
+ * plus the requested extensions from metadata.
+ *
+ * Supply a custom {@link CallContextBuilder} to apply your own policy.
  */
 export class DefaultCallContextBuilder implements CallContextBuilder {
   build(context: ContextLike, tenant?: string): ServerCallContext {
@@ -67,7 +103,7 @@ export class DefaultCallContextBuilder implements CallContextBuilder {
           .filter(Boolean)
       : undefined;
     return new ServerCallContext({
-      user: new UnauthenticatedUser(),
+      user: callerUser(context),
       tenant: tenant || undefined,
       requestedExtensions,
     });

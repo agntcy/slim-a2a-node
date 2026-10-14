@@ -36,11 +36,11 @@ oneofs, and bytes all round-trip faithfully with no hand-written field mapping.
   the `protoc-gen-slimrpc-node` plugin on `PATH`:
 
   ```sh
-  cargo install --locked --version 2.0.1 agntcy-protoc-slimrpc-plugin --bin protoc-gen-slimrpc-node
+  cargo install --locked --version 3.0.0 agntcy-protoc-slimrpc-plugin --bin protoc-gen-slimrpc-node
   ```
 
-  The committed stubs under `src/types/v1/` are generated with the 2.0 line of
-  the plugin, matching `@agntcy/slim-bindings` 2.0.
+  The committed stubs under `src/types/v1/` are generated with the 3.x line of
+  the plugin, matching `@agntcy/slim-bindings` 3.x.
 
 ## Install
 
@@ -199,13 +199,27 @@ in-memory key.
 
 #### Caller identity on the server
 
-`SRPCHandler`'s default `CallContextBuilder` sets the caller to
-`UnauthenticatedUser`. The slimrpc server `Context` in `@agntcy/slim-bindings`
-2.0 exposes no source name or verified identity for the caller, only the session
-id, deadline and caller-supplied metadata. SLIM still verifies the peer's
-identity before a message reaches the handler, but the handler cannot see who
-the peer is. Exposing the verified subject/issuer depends on the bindings
-upgrade.
+SLIM verifies the caller's identity before a request reaches the handler.
+`SRPCHandler`'s default `CallContextBuilder` passes it on: `context.user` is a
+`SlimAuthenticatedUser` whose `subject` (also `userName`) and optional `issuer`
+are the verified `sub` / `iss` of the token the caller's app set up the MLS
+session with, read from the slimrpc `Context` (`peerSubject()` /
+`peerIssuer()`). In a group session they are those of the request's MLS sender.
+When SLIM reports no identity (non-MLS sessions), the user is
+`UnauthenticatedUser`. Caller-supplied metadata is never used as an identity.
+
+```ts
+import { SlimAuthenticatedUser } from '@agntcy/slim-a2a';
+
+// inside an AgentExecutor, or anywhere the SDK hands you a ServerCallContext
+const user = requestContext.context.user;
+if (user instanceof SlimAuthenticatedUser) {
+  console.log(`call from ${user.subject} (issuer ${user.issuer ?? 'none'})`);
+}
+```
+
+To apply your own policy, pass a custom `contextBuilder` to `SRPCHandler`;
+`callerUser(context)` returns the same user the default builder uses.
 
 ### Multicast
 
@@ -214,7 +228,7 @@ upgrade.
 
 ### The `slim` namespace
 
-`slim` re-exports the `@agntcy/slim-bindings` 2.0 runtime — `Name`, `Service`,
+`slim` re-exports the `@agntcy/slim-bindings` 3.x runtime — `Name`, `Service`,
 `App`, `Channel`, `Server`, `RpcError`, the config helpers — for the parts this
 SDK does not wrap. Bindings 2.0 split the slimrpc API into a second UniFFI
 namespace (`slim_rpc`) that the package's type entry point does not re-export,
