@@ -50,11 +50,11 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cargo/bin/protoc-gen-slimrpc-node
-          key: slimrpc-plugin-1.5.0-${{ runner.os }}
+          key: slimrpc-plugin-3.0.0-${{ runner.os }}
 
       - name: Install slimrpc plugin
         if: steps.plugin-cache.outputs.cache-hit != 'true'
-        run: cargo install --locked agntcy-protoc-slimrpc-plugin@1.5.0 --bin protoc-gen-slimrpc-node
+        run: cargo install --locked agntcy-protoc-slimrpc-plugin@3.0.0 --bin protoc-gen-slimrpc-node
 
       # Regenerate the committed stubs and fail if they drift from what's checked
       # in. Needs neither @agntcy/slim-bindings nor npm — buf resolves the proto

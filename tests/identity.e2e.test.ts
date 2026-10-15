@@ -4,7 +4,8 @@
 /**
  * End-to-end: an agent bootstrapped through {@link connectAndSubscribe} with a
  * JWT identity (EdDSA / Ed25519) instead of a shared secret serves an A2A
- * message from a JWT-identified client over an in-process SLIM node.
+ * message from a JWT-identified client over an in-process SLIM node, and the
+ * handler sees the client's verified `sub` / `iss`.
  */
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -21,12 +22,19 @@ import {
   type ServerLike,
 } from '../src/slimBindings.js';
 import { AgentCard, SendMessageRequest, type Message } from '@a2a-js/sdk';
-import { DefaultRequestHandler, InMemoryTaskStore } from '@a2a-js/sdk/server';
+import {
+  DefaultRequestHandler,
+  InMemoryTaskStore,
+  type ExecutionEventBus,
+  type RequestContext,
+  type User,
+} from '@a2a-js/sdk/server';
 import {
   connectAndSubscribe,
   createSlimClient,
   initializeSlim,
   registerSlimA2AHandler,
+  SlimAuthenticatedUser,
   SRPCHandler,
   startSlimBroker,
   type SlimIdentity,
@@ -38,6 +46,20 @@ const SLIM_URL = `http://127.0.0.1:${PORT}`;
 const ISSUER = 'slim-a2a-node-test';
 const AUDIENCE = ['agntcy/demo'];
 const REMOTE = 'agntcy/demo/jwt_echo_agent';
+const CLIENT = 'agntcy/demo/jwt_client';
+
+/** Echo executor that records the caller the handler saw for each request. */
+class RecordingEchoExecutor extends EchoAgentExecutor {
+  readonly users: (User | undefined)[] = [];
+
+  override async execute(
+    requestContext: RequestContext,
+    eventBus: ExecutionEventBus,
+  ): Promise<void> {
+    this.users.push(requestContext.context.user);
+    return super.execute(requestContext, eventBus);
+  }
+}
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -89,6 +111,7 @@ const agentCard = AgentCard.fromJSON({
 });
 
 let server: ServerLike;
+const executor = new RecordingEchoExecutor();
 let clientApp: AppLike;
 let clientConnId: bigint;
 
@@ -105,7 +128,7 @@ beforeAll(async () => {
   const requestHandler = new DefaultRequestHandler(
     agentCard,
     new InMemoryTaskStore(),
-    new EchoAgentExecutor(),
+    executor,
   );
   server = Server.newWithConnection(srv.app, serverName, srv.connId);
   registerSlimA2AHandler(server, new SRPCHandler(agentCard, requestHandler));
@@ -115,7 +138,7 @@ beforeAll(async () => {
   // in-process client app reuses the server's connection (separate processes
   // would each call connectAndSubscribe).
   const clientName = new Name('agntcy', 'demo', 'jwt_client');
-  const { provider, verifier } = jwtIdentity('agntcy/demo/jwt_client');
+  const { provider, verifier } = jwtIdentity(CLIENT);
   clientApp = service.createApp(clientName, provider, verifier);
   clientConnId = srv.connId;
   await clientApp.subscribeAsync(clientName, clientConnId);
@@ -147,6 +170,14 @@ describe('JWT identity over SLIM', () => {
     expect(part?.content?.$case === 'text' ? part.content.value : null).toBe(
       'hello with jwt',
     );
+
+    // The handler sees the client's verified JWT identity, not the agent's own.
+    const user = executor.users.at(-1);
+    expect(user).toBeInstanceOf(SlimAuthenticatedUser);
+    expect(user?.isAuthenticated).toBe(true);
+    expect(user?.userName).toBe(CLIENT);
+    expect((user as SlimAuthenticatedUser).subject).toBe(CLIENT);
+    expect((user as SlimAuthenticatedUser).issuer).toBe(ISSUER);
   }, 30_000);
 
   it('rejects a caller whose JWT is signed by an untrusted key', async () => {
