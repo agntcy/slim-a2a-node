@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgraded to `@agntcy/slim-bindings` 3.3.3 (SLIM 3.4.3): fixes messages lost to
+  stale routes on a node and a lost first message on point-to-point sessions,
+  and moves to rustls 0.23.46 (RUSTSEC-2026-0285, -0346, -0348, -0349). No API
+  changes.
 - Upgraded to `@agntcy/slim-bindings` 3.3 and the 3.x slimrpc compiler
   (`agntcy-protoc-slimrpc-plugin` 3.0.0; the generated stubs are unchanged).
   The 3.x API is a superset of 2.0 for what this SDK uses.
